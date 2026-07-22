@@ -108,6 +108,9 @@ gameaction_t    gameaction;
 gamestate_t     gamestate; 
 skill_t         gameskill; 
 boolean		respawnmonsters;
+// [circle] Kamikaze mode. Off unless the player asks for it, and it lives with
+// the other per-game flags because that is exactly what it is.
+int             kamikaze;
 int             gameepisode; 
 int             gamemap; 
 

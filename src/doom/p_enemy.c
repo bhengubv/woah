@@ -40,6 +40,19 @@
 #include "sounds.h"
 
 
+//
+// P_Kamikaze
+// [circle] Every kamikaze branch below changes a decision, and a changed
+// decision spends a different number of P_Random() calls than vanilla would.
+// That is exactly what desyncs a demo, so playback wins: the flag is read
+// through here and reads off for the whole of a demo, whatever the menu says.
+//
+static boolean P_Kamikaze (void)
+{
+    return kamikaze && !demoplayback;
+}
+
+
 
 
 typedef enum
@@ -260,6 +273,11 @@ boolean P_CheckMissileRange (mobj_t* actor)
     if (dist > actor->info->minmissilechance)
       dist = actor->info->minmissilechance;
 		
+    // [circle] Kamikaze: what is left in dist is the chance of swallowing the
+    // shot, so cutting it to a quarter is what turns hesitation into fire.
+    if (P_Kamikaze())
+	dist >>= 2;
+
     if (P_Random () < dist)
 	return false;
 		
@@ -558,6 +576,12 @@ P_LookForPlayers
 	}
 		
 	actor->target = player->mo;
+
+	// [circle] Kamikaze: no gathering of wits. It is already moving on the
+	// tic it sees you, so there is no reactiontime left to spend.
+	if (P_Kamikaze())
+	    actor->reactiontime = 0;
+
 	return true;
     }
 
@@ -639,6 +663,11 @@ void A_Look (mobj_t* actor)
 		
     // go into chase state
   seeyou:
+    // [circle] Kamikaze: the same lack of a pause, for the monster that heard
+    // you rather than saw you.
+    if (P_Kamikaze())
+	actor->reactiontime = 0;
+
     if (actor->info->seesound)
     {
 	int		sound;
@@ -704,7 +733,13 @@ void A_Chase (mobj_t*	actor)
 	    actor->threshold = 0;
 	}
 	else
-	    actor->threshold--;
+	{
+	    // [circle] Kamikaze: threshold is the grudge timer, and letting it
+	    // run down is how a monster drifts off you and onto someone else.
+	    // Hold it where it is, and whoever it picked it keeps.
+	    if (!P_Kamikaze())
+		actor->threshold--;
+	}
     }
     
     // turn towards movement direction if not there yet
@@ -734,7 +769,10 @@ void A_Chase (mobj_t*	actor)
     if (actor->flags & MF_JUSTATTACKED)
     {
 	actor->flags &= ~MF_JUSTATTACKED;
-	if (gameskill != sk_nightmare && !fastparm)
+	// [circle] Kamikaze: the sidestep after landing a hit is a courtesy, and
+	// this mode has none. Hold the line and set the next one up, the way
+	// nightmare monsters already do.
+	if (gameskill != sk_nightmare && !fastparm && !P_Kamikaze())
 	    P_NewChaseDir (actor);
 	return;
     }
@@ -778,6 +816,13 @@ void A_Chase (mobj_t*	actor)
 	    return;	// got a new target
     }
     
+    // [circle] Kamikaze: movecount is how many tics a monster coasts on the
+    // direction it last picked, which is what lets you walk out from under it.
+    // Spend it every tic so P_NewChaseDir re-aims instead: it tries the
+    // straight line to the target first, and that is what closing in means.
+    if (P_Kamikaze())
+	actor->movecount = 0;
+
     // chase towards player
     if (--actor->movecount<0
 	|| !P_Move (actor))

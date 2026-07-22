@@ -100,6 +100,9 @@ extern  int             timelimit;
 // Nightmare mode flag, single player.
 extern  boolean         respawnmonsters;
 
+// [circle] Kamikaze mode: monsters that have seen you never stop coming.
+extern  int             kamikaze;
+
 // Netgame? Only true if >1 player.
 extern  boolean	netgame;
 

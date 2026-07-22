@@ -469,7 +469,7 @@ menuitem_t OptionsMenu[]=
     // [circle] There is no M_BOTS lump and none is wanted: the item draws
     // from its alttext, which is the sharper path anyway.
     {2,"M_BOTS",	M_ChangeBots,'b', "Bots"},
-    {1,"M_MULTI",	M_Multiplayer,'m', "Multiplayer"}
+    {1,"M_MULTI",	M_Multiplayer,'m', "Game Modes"}
 };
 
 menu_t  OptionsDef =
@@ -1882,6 +1882,7 @@ enum
     multi_host,
     multi_join,
     multi_spectate,
+    multi_kamikaze,
     multi_end
 } multi_e;
 
@@ -1898,11 +1899,20 @@ static void M_SpectateBots(int choice)
     G_DeferedInitNew(startskill, startepisode, startmap);
 }
 
+// [circle] Kamikaze: one flag, two states. The choice is ignored so left,
+// right and enter all do the same obvious thing, as the Messages toggle does.
+static void M_ToggleKamikaze(int choice)
+{
+    choice = 0;
+    kamikaze = !kamikaze;
+}
+
 static menuitem_t MultiMenu[]=
 {
     {1,"M_MHOST",	M_HostGame,'h', "Host a Game"},
     {1,"M_MJOIN",	M_JoinGame,'j', "Join a Game"},
-    {1,"M_MSPEC",	M_SpectateBots,'s', "Watch the Bots"}
+    {1,"M_MSPEC",	M_SpectateBots,'s', "Watch the Bots"},
+    {3,"M_MKAMI",	M_ToggleKamikaze,'k', "Kamikaze: "}
 };
 
 static menu_t MultiDef =
@@ -1917,9 +1927,15 @@ static menu_t MultiDef =
 
 static void M_DrawMultiplayer(void)
 {
-    M_DrawTitle(50, "Multiplayer");
-    M_WriteText(28, 140, "Both players need the same game, and to be");
-    M_WriteText(28, 152, "on the same network. Host first, then join.");
+    M_DrawTitle(50, "Game Modes");
+
+    // [circle] Same shape as the Options toggles: the label comes from the
+    // item's own alttext, the value is written just past it on the same row.
+    M_WriteText(MultiDef.x + M_StringWidth("Kamikaze: "),
+                MultiDef.y + LINEHEIGHT * multi_kamikaze + 8 - (M_StringHeight("OnOff")/2),
+                kamikaze ? "On" : "Off");
+    M_WriteText(28, 148, "Both players need the same game, and to be");
+    M_WriteText(28, 160, "on the same network. Host first, then join.");
 }
 
 static void M_Multiplayer(int choice)
