@@ -369,6 +369,18 @@ static void DrawRun(SDL_Renderer *rend, const ax_run_t *run,
 
     top = fr->y + (run->y + run->h) * py - GLYPH_ASCENT * scale;
 
+    // Cap height is matched to the engine's glyph box so text sits on the line
+    // the game laid out. This font has ascenders above that height, though, and
+    // the HUD message line sits at the very top of the screen -- there is
+    // nothing above it to draw into, so the tops of tall letters and the dot on
+    // an i were being shaved off. Nudge the line down just far enough to fit
+    // rather than moving every line down, which would pull the menus off the
+    // rows the engine measured them onto.
+    if (top < fr->y)
+    {
+        top = fr->y;
+    }
+
     SDL_SetTextureColorMod(atlas, run->r, run->g, run->b);
     SDL_SetTextureAlphaMod(atlas, alpha);
 
