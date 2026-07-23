@@ -1929,13 +1929,17 @@ static void M_DrawMultiplayer(void)
 {
     M_DrawTitle(50, "Game Modes");
 
-    // [circle] Same shape as the Options toggles: the label comes from the
-    // item's own alttext, the value is written just past it on the same row.
+    // [circle] The Kamikaze On/Off value, on its own item row.
     M_WriteText(MultiDef.x + M_StringWidth("Kamikaze: "),
                 MultiDef.y + LINEHEIGHT * multi_kamikaze + 8 - (M_StringHeight("OnOff")/2),
                 kamikaze ? "On" : "Off");
-    M_WriteText(28, 148, "Both players need the same game, and to be");
-    M_WriteText(28, 160, "on the same network. Host first, then join.");
+
+    // [circle] Short, centred lines: the originals ran off the 320-wide line
+    // and the engine's own width check clipped them at the right edge.
+    M_WriteText(ORIGWIDTH/2 - M_StringWidth("Same game, same wifi.")/2, 150,
+                "Same game, same wifi.");
+    M_WriteText(ORIGWIDTH/2 - M_StringWidth("Host first, then join.")/2, 162,
+                "Host first, then join.");
 }
 
 static void M_Multiplayer(int choice)
