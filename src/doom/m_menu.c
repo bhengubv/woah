@@ -1368,6 +1368,7 @@ void M_DrawNewGame(void)
 void M_NewGame(int choice)
 {
     botspectate = false;
+    deathmatch = 0; // [circle] reset: a prior deathmatch host leaves this 1
 
     // [crispy] forbid New Game while recording a demo
     if (demorecording)
@@ -1852,15 +1853,26 @@ void M_EndGame(int choice)
 //
 // [circle] --- multiplayer ---------------------------------------------------
 
-boolean D_NetHost(void);
+boolean D_NetHost(int deathmatch);
 boolean D_NetJoin(void);
 
-static void M_HostGame(int choice)
+static void M_HostCoop(int choice)
 {
     choice = 0;
     M_ClearMenus();
 
-    if (!D_NetHost())
+    if (!D_NetHost(0))
+    {
+        players[consoleplayer].message = "Could not start a game";
+    }
+}
+
+static void M_HostDeathmatch(int choice)
+{
+    choice = 0;
+    M_ClearMenus();
+
+    if (!D_NetHost(1))
     {
         players[consoleplayer].message = "Could not start a game";
     }
@@ -1879,7 +1891,8 @@ static void M_JoinGame(int choice)
 
 enum
 {
-    multi_host,
+    multi_hostcoop,
+    multi_hostdm,
     multi_join,
     multi_spectate,
     multi_kamikaze,
@@ -1894,6 +1907,7 @@ static void M_SpectateBots(int choice)
     // Fill every spare slot: three marines is a match worth watching, and the
     // human is about to stop being one of them.
     botspectate = true;
+    deathmatch = 0; // [circle] bots use P_BotHostile, not the deathmatch global
     P_BotSetBalance(-BOT_MAXBALANCE);
 
     G_DeferedInitNew(startskill, startepisode, startmap);
@@ -1909,7 +1923,8 @@ static void M_ToggleKamikaze(int choice)
 
 static menuitem_t MultiMenu[]=
 {
-    {1,"M_MHOST",	M_HostGame,'h', "Host a Game"},
+    {1,"M_MHCOOP",	M_HostCoop,'c', "Host Co-op"},
+    {1,"M_MHDM",	M_HostDeathmatch,'d', "Host Deathmatch"},
     {1,"M_MJOIN",	M_JoinGame,'j', "Join a Game"},
     {1,"M_MSPEC",	M_SpectateBots,'s', "Watch the Bots"},
     {3,"M_MKAMI",	M_ToggleKamikaze,'k', "Kamikaze: "}
@@ -1936,10 +1951,10 @@ static void M_DrawMultiplayer(void)
 
     // [circle] Short, centred lines: the originals ran off the 320-wide line
     // and the engine's own width check clipped them at the right edge.
-    M_WriteText(ORIGWIDTH/2 - M_StringWidth("Same game, same wifi.")/2, 150,
+    M_WriteText(ORIGWIDTH/2 - M_StringWidth("Same game, same wifi.")/2, 158,
                 "Same game, same wifi.");
-    M_WriteText(ORIGWIDTH/2 - M_StringWidth("Host first, then join.")/2, 162,
-                "Host first, then join.");
+    M_WriteText(ORIGWIDTH/2 - M_StringWidth("Host, or tap Join.")/2, 170,
+                "Host, or tap Join.");
 }
 
 static void M_Multiplayer(int choice)

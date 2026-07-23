@@ -324,9 +324,16 @@ static boolean D_NetStart(net_addr_t *addr)
     return true;
 }
 
-boolean D_NetHost(void)
+boolean D_NetHost(int wantdeathmatch)
 {
     net_addr_t *addr;
+
+    // [circle] The host is the controller, so its game settings become
+    // every client's: SaveGameSettings copies this global into
+    // settings->deathmatch and the server hands it out, then
+    // LoadGameSettings applies the agreed value back on all sides. Set
+    // it before the server reads it.
+    deathmatch = wantdeathmatch;
 
     NET_SV_Init();
     NET_SV_AddModule(&net_loop_server_module);
