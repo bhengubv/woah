@@ -7,6 +7,18 @@ else {
     apply plugin: 'com.android.library'
 }
 
+// versionCode auto-derived from git commit count - every build unique,
+// no manual bump. Falls back to 1 outside a git checkout.
+def gitVersionCode = { ->
+    try {
+        def out = new ByteArrayOutputStream()
+        exec { commandLine 'git', 'rev-list', '--count', 'HEAD'; standardOutput = out }
+        return Integer.parseInt(out.toString().trim())
+    } catch (Exception e) {
+        return 1
+    }
+}
+
 android {
     if (buildAsApplication) {
         namespace "net.thegeek.doom"
@@ -17,7 +29,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 34
         applicationId "net.thegeek.doom"
-        versionCode 1
+        versionCode gitVersionCode()
         versionName "1.0"
         externalNativeBuild {
             ndkBuild {
