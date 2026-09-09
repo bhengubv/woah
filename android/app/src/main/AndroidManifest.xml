@@ -22,7 +22,7 @@
         android:hardwareAccelerated="true" >
 
         <!-- crispy reads DOOMWADDIR to find the IWAD; DoomActivity extracts freedoom2.wad here. -->
-        <meta-data android:name="SDL_ENV.DOOMWADDIR" android:value="/data/data/net.thegeek.doom/files" />
+        <meta-data android:name="SDL_ENV.DOOMWADDIR" android:value="/data/data/net.thegeek.woah/files" />
         <!-- We translate touch ourselves in android_touch.c; no synthetic mouse events. -->
         <meta-data android:name="SDL_ENV.SDL_TOUCH_MOUSE_EVENTS" android:value="0" />
 

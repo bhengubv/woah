@@ -1,4 +1,4 @@
-package net.thegeek.doom;
+package net.thegeek.woah;
 
 import android.content.pm.ActivityInfo;
 import android.content.Context;

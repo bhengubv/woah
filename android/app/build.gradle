@@ -21,14 +21,14 @@ def gitVersionCode = { ->
 
 android {
     if (buildAsApplication) {
-        namespace "net.thegeek.doom"
+        namespace "net.thegeek.woah"
     }
     compileSdkVersion 34
     ndkVersion "29.0.14206865"
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 34
-        applicationId "net.thegeek.doom"
+        applicationId "net.thegeek.woah"
         versionCode gitVersionCode()
         versionName "1.0"
         externalNativeBuild {

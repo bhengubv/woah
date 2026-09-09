@@ -1,4 +1,19 @@
-# Crispy Doom
+# Woah!
+
+A free, open-source first-person shooter for phones, built on the
+[Crispy Doom](https://github.com/fabiangreffrath/crispy-doom) engine (GPLv2)
+with [Freedoom](https://freedoom.github.io/) game data (BSD).
+
+Its signature is the **marines dial**: turn it one way and a squad of marines
+fights *with* you; turn it the other way and the same marines *hunt* you.
+Plus AI bots, a per-level ladder, spectator mode, Kamikaze, and netgames.
+
+- Android app: [`android/`](android/) (SDL2 + NDK). App id `net.thegeek.woah`. One APK.
+- Licence: GPLv2, see [COPYING.md](COPYING.md). This repository is the complete source.
+
+---
+
+## Upstream: Crispy Doom
 [![Crispy Doom Icon](https://github.com/fabiangreffrath/crispy-doom/blob/master/data/doom.png)](https://github.com/fabiangreffrath/crispy-doom)
 
 [![Top Language](https://img.shields.io/github/languages/top/fabiangreffrath/crispy-doom.svg)](https://github.com/fabiangreffrath/crispy-doom)
