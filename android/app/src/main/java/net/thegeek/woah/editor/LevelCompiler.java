@@ -196,7 +196,8 @@ public final class LevelCompiler {
 
     static List<int[]> spansSubtract(int a, int b, List<int[]> cuts) {
         List<int[]> sorted = new ArrayList<>(cuts);
-        sorted.sort((u, v) -> u[0] != v[0] ? Integer.compare(u[0], v[0]) : Integer.compare(u[1], v[1]));
+        // Collections.sort, not List.sort: the latter is API 24+ and minSdk is 21
+        java.util.Collections.sort(sorted, (u, v) -> u[0] != v[0] ? Integer.compare(u[0], v[0]) : Integer.compare(u[1], v[1]));
         List<int[]> out = new ArrayList<>();
         for (int[] c : sorted) {
             int c0 = Math.max(c[0], a), c1 = Math.min(c[1], b);

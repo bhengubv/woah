@@ -1,5 +1,6 @@
 package net.thegeek.woah;
 
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.Context;
 import android.media.AudioManager;
@@ -52,6 +53,17 @@ public class DoomActivity extends SDLActivity {
             e.printStackTrace();
         }
         super.onCreate(savedInstanceState);
+    }
+
+    // The editor lives in another process and DOOM reads its arguments only at
+    // startup, so "play this new level" means: quit now, get launched again.
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        Uri data = intent != null ? intent.getData() : null;
+        if (data != null && "quit".equals(data.getHost())) {
+            SDLActivity.nativeSendQuit();
+        }
     }
 
     private void extractAsset(String name, boolean always) throws Exception {

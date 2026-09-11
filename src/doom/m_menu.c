@@ -224,6 +224,7 @@ static void M_SaveGame(int choice);
 static void M_Options(int choice);
 static void M_EndGame(int choice);
 static void M_ReadThis(int choice);
+static void M_Editor(int choice);
 static void M_ReadThis2(int choice);
 static void M_QuitDOOM(int choice);
 
@@ -290,6 +291,7 @@ enum
     loadgame,
     savegame,
     readthis,
+    editor,
     quitdoom,
     main_end
 } main_e;
@@ -319,6 +321,7 @@ static const char *M_LumpText (const char *name)
         { "M_SAVEG",  "Save Game" },
         { "M_RDTHIS", "Read This!" },
         { "M_ABOUT",  "About Woah!" },
+        { "M_EDITOR", "Level Editor" },
         { "M_QUITG",  "Quit Game" },
         { "M_EPI1",   "Knee-Deep in the Dead" },
         { "M_EPI2",   "The Shores of Hell" },
@@ -348,6 +351,7 @@ menuitem_t MainMenu[]=
     {1,"M_SAVEG",M_SaveGame,'s'},
     // Another hickup with Special edition.
     {1,"M_RDTHIS",M_ReadThis,'r'},
+    {1,"M_EDITOR",M_Editor,'l', "Level Editor"},
     {1,"M_QUITG",M_QuitDOOM,'q'}
 };
 
@@ -2030,6 +2034,14 @@ static void M_About(int choice)
 {
     choice = 0;
     M_SetupNextMenu(&AboutDef);
+}
+
+// [circle] The level editor is a separate Activity (and process) in this APK;
+// the URI resolves to it. The game stays put until the editor's Play relaunches it.
+static void M_Editor(int choice)
+{
+    choice = 0;
+    SDL_OpenURL("circledoom://edit");
 }
 
 void M_ReadThis(int choice)

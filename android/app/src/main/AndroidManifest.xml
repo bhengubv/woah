@@ -43,7 +43,23 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="circledoom" />
+                <data android:scheme="circledoom" android:host="play" />
+                <data android:scheme="circledoom" android:host="quit" />
+            </intent-filter>
+        </activity>
+
+        <!-- The level editor: its own process, so Play can ask the game to quit and
+             relaunch it with a new level (DOOM reads its arguments only at startup). -->
+        <activity android:name=".editor.EditorActivity"
+            android:label="Woah! Editor"
+            android:process=":editor"
+            android:screenOrientation="sensorLandscape"
+            android:exported="true" >
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="circledoom" android:host="edit" />
             </intent-filter>
         </activity>
     </application>
