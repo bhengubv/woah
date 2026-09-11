@@ -14,7 +14,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, "..", "prefab"))
 import wadlib
-from tiles import TILES, CELL, ROLE_THINGS
+from tiles import TILES, CELL, ROLE_THINGS, resolve_thing
 
 DRESS = {  # from tools/prefab palettes.json (Freedoom, BSD): the commonest pairings
     "tech": dict(floor="CEIL5_2", ceil="CEIL5_2", wall="METAL", light=160),
@@ -80,6 +80,8 @@ class Level:
     def place(self):
         c = self.card
         grid = c.get("grid", CELL)
+        pop = c.get("pop") or {}
+        preset, overrides = pop.get("preset", "normal"), pop.get("slots") or {}
         for ti, t in enumerate(c["tiles"]):
             tile = TILES[t["t"]]
             dress = DRESS[t.get("dress", "tech")]
@@ -92,9 +94,12 @@ class Level:
                 for (x0, y0, x1, y1) in sec["rects"]:
                     self.rects.append(dict(x0=ox + x0 * grid, y0=oy + y0 * grid, x1=ox + x1 * grid,
                                            y1=oy + y1 * grid, sector=si, tile=ti))
-            for sl in tile["slots"]:
+            for si, sl in enumerate(tile["slots"]):
+                kind = resolve_thing(sl["role"], preset, overrides.get("%d/%d" % (ti, si)))
+                if kind is None:
+                    continue
                 self.things.append(dict(x=int(ox + sl["x"] * grid), y=int(oy + sl["y"] * grid), angle=0,
-                                        type=ROLE_THINGS[sl["role"]], flags=7, tile=ti, role=sl["role"]))
+                                        type=kind, flags=7, tile=ti, role=sl["role"]))
         for a, b in c.get("doors", []):
             span = self.door_span(a, b)
             if span is None:

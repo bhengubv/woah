@@ -540,5 +540,39 @@
   "armor": 2018,
   "key": 5,
   "secret": 2013
+ },
+ "presets": {
+  "easy": {
+   "monster_s": 3004,
+   "monster_m": 3001,
+   "monster_l": 3002
+  },
+  "normal": {
+   "monster_s": 3001,
+   "monster_m": 3002,
+   "monster_l": 3005
+  },
+  "hard": {
+   "monster_s": 3002,
+   "monster_m": 3005,
+   "monster_l": 69
+  }
+ },
+ "monsters": {
+  "zombieman": 3004,
+  "shotgunner": 9,
+  "chaingunner": 65,
+  "imp": 3001,
+  "demon": 3002,
+  "spectre": 58,
+  "lost soul": 3006,
+  "cacodemon": 3005,
+  "hell knight": 69,
+  "baron": 3003,
+  "arachnotron": 68,
+  "pain elemental": 71,
+  "revenant": 66,
+  "mancubus": 67,
+  "arch-vile": 64
  }
 }

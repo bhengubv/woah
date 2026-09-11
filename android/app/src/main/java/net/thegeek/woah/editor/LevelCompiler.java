@@ -82,6 +82,9 @@ public final class LevelCompiler {
     void place(JSONObject card) throws JSONException {
         grid = card.optInt("grid", tiles.cell);
         cardTiles = card.getJSONArray("tiles");
+        JSONObject pop = card.optJSONObject("pop");
+        String preset = pop != null ? pop.optString("preset", "normal") : "normal";
+        JSONObject overrides = pop != null ? pop.optJSONObject("slots") : null;
         for (int ti = 0; ti < cardTiles.length(); ti++) {
             JSONObject t = cardTiles.getJSONObject(ti);
             Tiles.Tile tile = tiles.tiles.get(t.getString("t"));
@@ -102,10 +105,15 @@ public final class LevelCompiler {
                     rects.add(rc);
                 }
             }
-            for (Tiles.Slot sl : tile.slots) {
+            for (int si = 0; si < tile.slots.size(); si++) {
+                Tiles.Slot sl = tile.slots.get(si);
+                String key = ti + "/" + si;
+                String override = overrides != null && overrides.has(key) ? overrides.getString(key) : null;
+                int kind = tiles.resolveThing(sl.role, preset, override);
+                if (kind < 0) continue;
                 Thing th = new Thing();
                 th.x = (int) (ox + sl.x * grid); th.y = (int) (oy + sl.y * grid);
-                th.type = tiles.roles.get(sl.role);
+                th.type = kind;
                 things.add(th);
             }
         }

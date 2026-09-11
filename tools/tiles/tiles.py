@@ -64,11 +64,42 @@ ROLE_THINGS = {
     "ammo": 2007, "health": 2012, "armor": 2018, "key": 5, "secret": 2013,
 }
 
+# Population presets: what the monster roles resolve to. Geometry stays the same; the
+# card's pop.preset picks a column. "normal" is ROLE_THINGS itself.
+PRESETS = {
+    "easy":   {"monster_s": 3004, "monster_m": 3001, "monster_l": 3002},   # zombieman, imp, demon
+    "normal": {"monster_s": 3001, "monster_m": 3002, "monster_l": 3005},   # imp, demon, cacodemon
+    "hard":   {"monster_s": 3002, "monster_m": 3005, "monster_l": 69},     # demon, cacodemon, hell knight
+}
+
+# Names a per-slot override may use (pop.slots: {"<tile>/<slot>": name | role | "none"}).
+MONSTERS = {
+    "zombieman": 3004, "shotgunner": 9, "chaingunner": 65, "imp": 3001, "demon": 3002, "spectre": 58,
+    "lost soul": 3006, "cacodemon": 3005, "hell knight": 69, "baron": 3003, "arachnotron": 68,
+    "pain elemental": 71, "revenant": 66, "mancubus": 67, "arch-vile": 64,
+}
+
+
+def resolve_thing(role, preset, override):
+    """Thing type for a slot, or None to leave the slot empty. Both compilers do this."""
+    if override is not None:
+        if override == "none":
+            return None
+        if override in MONSTERS:
+            return MONSTERS[override]
+        if override in ROLE_THINGS:
+            role = override
+        else:
+            raise KeyError("unknown slot override %r" % (override,))
+    if role in PRESETS.get(preset, PRESETS["normal"]):
+        return PRESETS.get(preset, PRESETS["normal"])[role]
+    return ROLE_THINGS[role]
+
 
 if __name__ == "__main__":
     # Export the catalogue for the on-device compiler: python3 tiles.py <out.json>
     import json, sys
     out = sys.argv[1] if len(sys.argv) > 1 else "tiles.json"
     with open(out, "w", encoding="utf-8") as f:
-        json.dump({"cell": CELL, "tiles": TILES, "roles": ROLE_THINGS}, f, indent=1)
+        json.dump({"cell": CELL, "tiles": TILES, "roles": ROLE_THINGS, "presets": PRESETS, "monsters": MONSTERS}, f, indent=1)
     print("wrote", out, len(TILES), "tiles")

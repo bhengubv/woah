@@ -40,6 +40,21 @@ public final class Tiles {
     public final int cell;
     public final Map<String, Tile> tiles = new HashMap<>();
     public final Map<String, Integer> roles = new HashMap<>();
+    public final Map<String, Map<String, Integer>> presets = new HashMap<>();
+    public final Map<String, Integer> monsters = new HashMap<>();
+
+    /** Thing type for a slot, or -1 to leave it empty. Mirrors tiles.py resolve_thing. */
+    public int resolveThing(String role, String preset, String override) {
+        if (override != null) {
+            if (override.equals("none")) return -1;
+            if (monsters.containsKey(override)) return monsters.get(override);
+            if (roles.containsKey(override)) role = override;
+            else throw new IllegalArgumentException("unknown slot override " + override);
+        }
+        Map<String, Integer> p = presets.containsKey(preset) ? presets.get(preset) : presets.get("normal");
+        if (p != null && p.containsKey(role)) return p.get(role);
+        return roles.get(role);
+    }
 
     public Tiles(String json) throws JSONException {   // checked on Android's org.json
         JSONObject root = new JSONObject(json);
@@ -91,6 +106,26 @@ public final class Tiles {
         for (Iterator<String> it = rs.keys(); it.hasNext(); ) {
             String k = it.next();
             roles.put(k, rs.getInt(k));
+        }
+        JSONObject ps = root.optJSONObject("presets");
+        if (ps != null) {
+            for (Iterator<String> it = ps.keys(); it.hasNext(); ) {
+                String name = it.next();
+                JSONObject p = ps.getJSONObject(name);
+                Map<String, Integer> m = new HashMap<>();
+                for (Iterator<String> jt = p.keys(); jt.hasNext(); ) {
+                    String role = jt.next();
+                    m.put(role, p.getInt(role));
+                }
+                presets.put(name, m);
+            }
+        }
+        JSONObject ms = root.optJSONObject("monsters");
+        if (ms != null) {
+            for (Iterator<String> it = ms.keys(); it.hasNext(); ) {
+                String k = it.next();
+                monsters.put(k, ms.getInt(k));
+            }
         }
     }
 }

@@ -30,15 +30,24 @@ public class LevelCompilerTest {
         return new String(Files.readAllBytes(new File(root, rel).toPath()), StandardCharsets.UTF_8);
     }
 
-    @Test
-    public void firstLightMatchesTheReferenceCompiler() throws Exception {
+    static void assertGolden(String card) throws Exception {
         File root = repoRoot();
         Wad iwad = new Wad(Files.readAllBytes(new File(root, "android/app/src/main/assets/freedoom2.wad").toPath()));
         Tiles tiles = new Tiles(text(root, "android/app/src/main/assets/tiles.json"));
         LevelCompiler c = new LevelCompiler(tiles, iwad.textureNames(), iwad.flatNames());
-        byte[] out = c.compile(text(root, "docs/editor/cards/first-light.json"));
-        byte[] golden = Files.readAllBytes(new File(root, "docs/editor/cards/first-light.wad").toPath());
+        byte[] out = c.compile(text(root, "docs/editor/cards/" + card + ".json"));
+        byte[] golden = Files.readAllBytes(new File(root, "docs/editor/cards/" + card + ".wad").toPath());
         assertTrue("compiler warnings: " + c.warnings, c.warnings.isEmpty());
-        assertArrayEquals("Java and Python compilers disagree", golden, out);
+        assertArrayEquals("Java and Python compilers disagree on " + card, golden, out);
+    }
+
+    @Test
+    public void firstLightMatchesTheReferenceCompiler() throws Exception {
+        assertGolden("first-light");
+    }
+
+    @Test
+    public void hardPresetAndSlotOverridesMatchTheReferenceCompiler() throws Exception {
+        assertGolden("first-light-hard");
     }
 }
