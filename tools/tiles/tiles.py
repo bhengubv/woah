@@ -63,3 +63,12 @@ ROLE_THINGS = {
     "player": 1, "monster_s": 3001, "monster_m": 3002, "monster_l": 3005,
     "ammo": 2007, "health": 2012, "armor": 2018, "key": 5, "secret": 2013,
 }
+
+
+if __name__ == "__main__":
+    # Export the catalogue for the on-device compiler: python3 tiles.py <out.json>
+    import json, sys
+    out = sys.argv[1] if len(sys.argv) > 1 else "tiles.json"
+    with open(out, "w", encoding="utf-8") as f:
+        json.dump({"cell": CELL, "tiles": TILES, "roles": ROLE_THINGS}, f, indent=1)
+    print("wrote", out, len(TILES), "tiles")

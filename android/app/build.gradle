@@ -105,5 +105,8 @@ android {
 }
 
 dependencies {
+    // JVM unit tests of the editor's compiler: android.jar's org.json is a stub, so the real one
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20240303'
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 }

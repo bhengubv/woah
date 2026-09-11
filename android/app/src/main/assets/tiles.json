@@ -1,0 +1,544 @@
+{
+ "cell": 64,
+ "tiles": {
+  "start": {
+   "id": "start",
+   "w": 4,
+   "h": 4,
+   "sectors": [
+    {
+     "rects": [
+      [
+       0,
+       0,
+       4,
+       4
+      ]
+     ],
+     "floor": 0,
+     "ceil": 128,
+     "kind": "room"
+    }
+   ],
+   "sockets": [
+    {
+     "edge": "E",
+     "pos": 1,
+     "width": 2
+    },
+    {
+     "edge": "S",
+     "pos": 1,
+     "width": 2
+    }
+   ],
+   "slots": [
+    {
+     "x": 2,
+     "y": 2,
+     "role": "player"
+    }
+   ],
+   "exit_edge": null
+  },
+  "exit": {
+   "id": "exit",
+   "w": 4,
+   "h": 4,
+   "sectors": [
+    {
+     "rects": [
+      [
+       0,
+       0,
+       4,
+       4
+      ]
+     ],
+     "floor": 0,
+     "ceil": 128,
+     "kind": "room"
+    }
+   ],
+   "sockets": [
+    {
+     "edge": "W",
+     "pos": 1,
+     "width": 2
+    },
+    {
+     "edge": "N",
+     "pos": 1,
+     "width": 2
+    }
+   ],
+   "slots": [],
+   "exit_edge": "E"
+  },
+  "hall_ew": {
+   "id": "hall_ew",
+   "w": 4,
+   "h": 2,
+   "sectors": [
+    {
+     "rects": [
+      [
+       0,
+       0,
+       4,
+       2
+      ]
+     ],
+     "floor": 0,
+     "ceil": 96,
+     "kind": "hall"
+    }
+   ],
+   "sockets": [
+    {
+     "edge": "W",
+     "pos": 0,
+     "width": 2
+    },
+    {
+     "edge": "E",
+     "pos": 0,
+     "width": 2
+    }
+   ],
+   "slots": [],
+   "exit_edge": null
+  },
+  "hall_ns": {
+   "id": "hall_ns",
+   "w": 2,
+   "h": 4,
+   "sectors": [
+    {
+     "rects": [
+      [
+       0,
+       0,
+       2,
+       4
+      ]
+     ],
+     "floor": 0,
+     "ceil": 96,
+     "kind": "hall"
+    }
+   ],
+   "sockets": [
+    {
+     "edge": "N",
+     "pos": 0,
+     "width": 2
+    },
+    {
+     "edge": "S",
+     "pos": 0,
+     "width": 2
+    }
+   ],
+   "slots": [],
+   "exit_edge": null
+  },
+  "corner_sw_ne": {
+   "id": "corner_sw_ne",
+   "w": 4,
+   "h": 4,
+   "sectors": [
+    {
+     "rects": [
+      [
+       0,
+       0,
+       4,
+       2
+      ],
+      [
+       2,
+       2,
+       4,
+       4
+      ]
+     ],
+     "floor": 0,
+     "ceil": 96,
+     "kind": "hall"
+    }
+   ],
+   "sockets": [
+    {
+     "edge": "W",
+     "pos": 0,
+     "width": 2
+    },
+    {
+     "edge": "N",
+     "pos": 2,
+     "width": 2
+    }
+   ],
+   "slots": [],
+   "exit_edge": null
+  },
+  "room_s": {
+   "id": "room_s",
+   "w": 4,
+   "h": 4,
+   "sectors": [
+    {
+     "rects": [
+      [
+       0,
+       0,
+       4,
+       4
+      ]
+     ],
+     "floor": 0,
+     "ceil": 128,
+     "kind": "room"
+    }
+   ],
+   "sockets": [
+    {
+     "edge": "N",
+     "pos": 1,
+     "width": 2
+    },
+    {
+     "edge": "E",
+     "pos": 1,
+     "width": 2
+    },
+    {
+     "edge": "S",
+     "pos": 1,
+     "width": 2
+    },
+    {
+     "edge": "W",
+     "pos": 1,
+     "width": 2
+    }
+   ],
+   "slots": [
+    {
+     "x": 2,
+     "y": 2,
+     "role": "monster_s"
+    },
+    {
+     "x": 1,
+     "y": 1,
+     "role": "ammo"
+    }
+   ],
+   "exit_edge": null
+  },
+  "room_m": {
+   "id": "room_m",
+   "w": 6,
+   "h": 6,
+   "sectors": [
+    {
+     "rects": [
+      [
+       0,
+       0,
+       6,
+       6
+      ]
+     ],
+     "floor": 0,
+     "ceil": 160,
+     "kind": "room"
+    }
+   ],
+   "sockets": [
+    {
+     "edge": "N",
+     "pos": 2,
+     "width": 2
+    },
+    {
+     "edge": "E",
+     "pos": 2,
+     "width": 2
+    },
+    {
+     "edge": "S",
+     "pos": 2,
+     "width": 2
+    },
+    {
+     "edge": "W",
+     "pos": 2,
+     "width": 2
+    }
+   ],
+   "slots": [
+    {
+     "x": 1.5,
+     "y": 1.5,
+     "role": "monster_s"
+    },
+    {
+     "x": 4.5,
+     "y": 4.5,
+     "role": "monster_s"
+    },
+    {
+     "x": 3,
+     "y": 3,
+     "role": "health"
+    },
+    {
+     "x": 1.5,
+     "y": 4.5,
+     "role": "ammo"
+    }
+   ],
+   "exit_edge": null
+  },
+  "room_l": {
+   "id": "room_l",
+   "w": 8,
+   "h": 8,
+   "sectors": [
+    {
+     "rects": [
+      [
+       0,
+       0,
+       8,
+       8
+      ]
+     ],
+     "floor": 0,
+     "ceil": 192,
+     "kind": "room"
+    }
+   ],
+   "sockets": [
+    {
+     "edge": "N",
+     "pos": 3,
+     "width": 2
+    },
+    {
+     "edge": "E",
+     "pos": 3,
+     "width": 2
+    },
+    {
+     "edge": "S",
+     "pos": 3,
+     "width": 2
+    },
+    {
+     "edge": "W",
+     "pos": 3,
+     "width": 2
+    }
+   ],
+   "slots": [
+    {
+     "x": 2,
+     "y": 2,
+     "role": "monster_m"
+    },
+    {
+     "x": 6,
+     "y": 6,
+     "role": "monster_m"
+    },
+    {
+     "x": 2,
+     "y": 6,
+     "role": "monster_s"
+    },
+    {
+     "x": 6,
+     "y": 2,
+     "role": "monster_s"
+    },
+    {
+     "x": 4,
+     "y": 4,
+     "role": "armor"
+    }
+   ],
+   "exit_edge": null
+  },
+  "pillar_room": {
+   "id": "pillar_room",
+   "w": 6,
+   "h": 6,
+   "sectors": [
+    {
+     "rects": [
+      [
+       0,
+       0,
+       6,
+       2
+      ],
+      [
+       0,
+       4,
+       6,
+       6
+      ],
+      [
+       0,
+       2,
+       2,
+       4
+      ],
+      [
+       4,
+       2,
+       6,
+       4
+      ]
+     ],
+     "floor": 0,
+     "ceil": 160,
+     "kind": "room"
+    }
+   ],
+   "sockets": [
+    {
+     "edge": "N",
+     "pos": 2,
+     "width": 2
+    },
+    {
+     "edge": "E",
+     "pos": 2,
+     "width": 2
+    },
+    {
+     "edge": "S",
+     "pos": 2,
+     "width": 2
+    },
+    {
+     "edge": "W",
+     "pos": 2,
+     "width": 2
+    }
+   ],
+   "slots": [
+    {
+     "x": 1,
+     "y": 1,
+     "role": "monster_s"
+    },
+    {
+     "x": 5,
+     "y": 5,
+     "role": "monster_s"
+    },
+    {
+     "x": 1,
+     "y": 5,
+     "role": "ammo"
+    },
+    {
+     "x": 5,
+     "y": 1,
+     "role": "health"
+    }
+   ],
+   "exit_edge": null
+  },
+  "steps_ew": {
+   "id": "steps_ew",
+   "w": 4,
+   "h": 2,
+   "sectors": [
+    {
+     "rects": [
+      [
+       0,
+       0,
+       1,
+       2
+      ]
+     ],
+     "floor": 0,
+     "ceil": 128,
+     "kind": "step"
+    },
+    {
+     "rects": [
+      [
+       1,
+       0,
+       2,
+       2
+      ]
+     ],
+     "floor": 16,
+     "ceil": 128,
+     "kind": "step"
+    },
+    {
+     "rects": [
+      [
+       2,
+       0,
+       3,
+       2
+      ]
+     ],
+     "floor": 32,
+     "ceil": 128,
+     "kind": "step"
+    },
+    {
+     "rects": [
+      [
+       3,
+       0,
+       4,
+       2
+      ]
+     ],
+     "floor": 48,
+     "ceil": 128,
+     "kind": "step"
+    }
+   ],
+   "sockets": [
+    {
+     "edge": "W",
+     "pos": 0,
+     "width": 2
+    },
+    {
+     "edge": "E",
+     "pos": 0,
+     "width": 2
+    }
+   ],
+   "slots": [],
+   "exit_edge": null
+  }
+ },
+ "roles": {
+  "player": 1,
+  "monster_s": 3001,
+  "monster_m": 3002,
+  "monster_l": 3005,
+  "ammo": 2007,
+  "health": 2012,
+  "armor": 2018,
+  "key": 5,
+  "secret": 2013
+ }
+}
