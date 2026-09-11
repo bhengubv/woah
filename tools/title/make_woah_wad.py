@@ -4,13 +4,16 @@
 Keeps the Freedoom title art (BSD). The FREEDOOM logo is painted out with sky
 cloned from the same rows, and "Woah!" is set straight on that sky as chunky,
 pixel-crisp chrome lettering (silver, blue "!", dark outline, drop shadow, dark
-aura) so it sits IN the painting rather than on top of it. M_DOOM is that
-lettering cropped and offset so M_DrawMainMenu's (94,2) lands it exactly where
-it is on the title. The app loads the result with -file: engine untouched.
+aura) so it sits IN the painting rather than on top of it. Freedoom's "PHASE 2"
+subtitle is covered by our version line in the same lettering - the version is
+read from android/app/build.gradle's versionName unless --version= is given.
+M_DOOM is the title lettering cropped and offset so M_DrawMainMenu's (94,2)
+lands it exactly where it is on the title. The app loads the result with -file.
 
-usage: make_woah_wad.py <freedoom2.wad> <out.wad> [preview_dir] [--style=upright|italic]
+usage: make_woah_wad.py <freedoom2.wad> <out.wad> [preview_dir]
+                        [--style=upright|italic] [--version=1.0|none]
 """
-import os, struct, sys
+import os, re, struct, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "prefab"))
 import wadlib
@@ -19,12 +22,17 @@ from PIL import Image, ImageDraw, ImageFont
 
 BRAND_BLUE = (33, 150, 243)   # #2196F3 - the one blue
 
-STYLES = {  # first font that exists wins; (path, variation axes by name - wide, so the
-    # lettering spans the old logo's footprint instead of leaving its edges peeking out)
-    "upright": [("/usr/share/fonts/truetype/ubuntu/Ubuntu[wdth,wght].ttf", {"wght": 800, "wdth": 125}),
-                ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", None)],
-    "italic": [("/usr/share/fonts/truetype/ubuntu/Ubuntu-Italic[wdth,wght].ttf", {"wght": 800, "wdth": 125}),
-               ("/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf", None)],
+UBUNTU = "/usr/share/fonts/truetype/ubuntu/Ubuntu[wdth,wght].ttf"
+UBUNTU_I = "/usr/share/fonts/truetype/ubuntu/Ubuntu-Italic[wdth,wght].ttf"
+DEJAVU = "/usr/share/fonts/truetype/dejavu/"
+STYLES = {  # first font that exists wins; (path, variation axes by name)
+    "upright": [(UBUNTU, {"wght": 800, "wdth": 100}), (DEJAVU + "DejaVuSans-Bold.ttf", None)],
+    "italic": [(UBUNTU_I, {"wght": 800, "wdth": 100}), (DEJAVU + "DejaVuSans-BoldOblique.ttf", None)],
+    # condensed cuts for the version line: it must span the old subtitle's width at full height
+    "upright-narrow": [(UBUNTU, {"wght": 800, "wdth": 75}), (DEJAVU + "DejaVuSansCondensed-Bold.ttf", None),
+                       (DEJAVU + "DejaVuSans-Bold.ttf", None)],
+    "italic-narrow": [(UBUNTU_I, {"wght": 800, "wdth": 75}), (DEJAVU + "DejaVuSansCondensed-BoldOblique.ttf", None),
+                      (DEJAVU + "DejaVuSans-BoldOblique.ttf", None)],
 }
 
 
@@ -170,12 +178,12 @@ def chrome(f, blue):
     return lerp(lo, bot, (f - 0.55) / 0.45)
 
 
-def lettering(wd, ht, cx, cy, box_w, box_h, style):
-    """Pixel-crisp chrome 'Woah!' (blue '!') with a 1px dark outline, a 2px drop
-    shadow and a 3px dark aura, as an RGBA array. No antialiasing on purpose:
-    at 320x200 it has to look painted, not rendered."""
-    f = fit_font("Woah!", box_w, box_h, style)
-    print("  font:", getattr(f, "path", "?"), "size", f.size)
+def lettering(wd, ht, cx, cy, box_w, box_h, style, text="Woah!", blue_tail="!", aura_px=3):
+    """Pixel-crisp chrome text (an optional blue tail, e.g. the "!") with a 1px dark
+    outline, a 2px drop shadow and a dark aura, as an RGBA array. No antialiasing
+    on purpose: at 320x200 it has to look painted, not rendered."""
+    f = fit_font(text, box_w, box_h, style)
+    print("  font:", getattr(f, "path", "?"), "size", f.size, "for", repr(text))
     try:  # prove the variation actually applied
         print("  axes:", [(_axis_key(a), a["minimum"], a["default"], a["maximum"]) for a in f.get_variation_axes()],
               "set:", STYLES[style][0][1])
@@ -183,7 +191,7 @@ def lettering(wd, ht, cx, cy, box_w, box_h, style):
         pass
     probe = ImageDraw.Draw(Image.new("L", (1, 1)))
     probe.fontmode = "1"
-    l, t, r, b = probe.textbbox((0, 0), "Woah!", font=f)
+    l, t, r, b = probe.textbbox((0, 0), text, font=f)
     x0 = int(round(cx - (r - l) / 2 - l))
     y0 = int(round(cy - (b - t) / 2 - t))
 
@@ -194,16 +202,20 @@ def lettering(wd, ht, cx, cy, box_w, box_h, style):
         d.text((x, y0), txt, font=f, fill=255)
         return np.asarray(img) > 0
 
-    m_word = mask("Woah", x0)
-    m_bang = mask("!", x0 + int(round(probe.textlength("Woah", font=f))))
-    m = m_word | m_bang
+    word = text[:-len(blue_tail)] if blue_tail and text.endswith(blue_tail) else text
+    m_word = mask(word, x0)
+    if word != text:
+        m_tail = mask(blue_tail, x0 + int(round(probe.textlength(word, font=f))))
+    else:
+        m_tail = np.zeros((ht, wd), bool)
+    m = m_word | m_tail
     edge = dilate(m) & ~m
     body = m | edge
     shadow = np.zeros_like(m)
     shadow[2:, 2:] = body[:-2, :-2]
     shadow &= ~body
     aura = body | shadow
-    for _ in range(3):
+    for _ in range(aura_px):
         aura = dilate(aura)
     aura &= ~(body | shadow)
     layer = np.zeros((ht, wd, 4), np.uint8)
@@ -213,14 +225,36 @@ def lettering(wd, ht, cx, cy, box_w, box_h, style):
     ty, by = y0 + t, y0 + b
     for y, x in zip(*np.where(m)):
         fr = min(1.0, max(0.0, (y - ty) / max(1, by - ty)))
-        layer[y, x] = chrome(fr, bool(m_bang[y, x])) + (255,)
+        layer[y, x] = chrome(fr, bool(m_tail[y, x])) + (255,)
     return layer
+
+
+def paint(px, pal, layer):
+    """Quantise only the painted pixels into the index image; the art keeps its indices."""
+    a = layer[..., 3]
+    for y, x in zip(*np.where(a > 0)):
+        px[y][x] = pal.nearest(tuple(int(c) for c in layer[y, x, :3]))
+
+
+def neutral_text_bbox(img, y0, y1, x0, x1, lum_min=170, chroma_max=25):
+    """Mask + bbox of bright, near-neutral (silver) text pixels inside a window."""
+    a = np.asarray(img).astype(np.int32)
+    lum = (a[..., 0] * 299 + a[..., 1] * 587 + a[..., 2] * 114) // 1000
+    chroma = a.max(axis=2) - a.min(axis=2)
+    m = (lum >= lum_min) & (chroma <= chroma_max)
+    win = np.zeros_like(m)
+    win[y0:y1, x0:x1] = True
+    m &= win
+    ys, xs = np.where(m)
+    if len(xs) == 0:
+        return None, m
+    return (int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())), m
 
 
 def logo_mask(img, y0=4, y1=62, x0=40, x1=280):
     """The FREEDOOM logo's own pixels - silver letters (bright, near-neutral) plus
-    the orange infinity - grown 3px to swallow bevel and shadow. The horizontal
-    span is taken from the RIGHT half and mirrored (the creature on the left has
+    the orange infinity - grown to swallow bevel and shadow. The horizontal span
+    is taken from the RIGHT half and mirrored (the creature on the left has
     bright beige highlights that fool colour tests); Freedoom centres the logo."""
     a = np.asarray(img).astype(np.int32)
     lum = (a[..., 0] * 299 + a[..., 1] * 587 + a[..., 2] * 114) // 1000
@@ -261,23 +295,39 @@ def paint_out(px, m, src_x0=238, src_x1=288):
         px[y][x] = px[y][sx]
 
 
-def make_titlepic(pal, data, style):
-    """Returns (patch tuple, lettering alpha mask)."""
+def make_titlepic(pal, data, style, version):
+    """Returns (patch tuple, title-lettering alpha mask)."""
     wd, ht, lo, to, px = decode_patch(data)
     base = pal.to_image(px, wd, ht)
     m, (lx, ty, rx, by) = logo_mask(base)
     print("  logo bbox: (%d,%d)-(%d,%d); painting out %d px" % (lx, ty, rx, by, int(m.sum())))
     paint_out(px, m)
-    cx, cy = (lx + rx) / 2.0, (ty + by) / 2.0
-    layer = lettering(wd, ht, cx, cy, (rx - lx + 1) + 24, 40, style)
-    alpha = layer[..., 3]
-    for y, x in zip(*np.where(alpha > 0)):   # only painted pixels get re-quantised
-        px[y][x] = pal.nearest(tuple(int(c) for c in layer[y, x, :3]))
-    return (wd, ht, lo, to, px), alpha
+    layer = lettering(wd, ht, (lx + rx) / 2.0, (ty + by) / 2.0, (rx - lx + 1) + 24, 40, style)
+    paint(px, pal, layer)
+    if version:
+        # Freedoom's "PHASE 2" sits on the marine's boots and the rock - nothing clean to
+        # clone - so our version line is sized to COVER it, and the coverage is measured.
+        vb, vmask = neutral_text_bbox(base, 148, 180, 100, 220)
+        if vb is None:
+            print("  PHASE 2 not found - version line skipped")
+        else:
+            vx0, vy0, vx1, vy1 = vb
+            print("  PHASE 2 bbox: (%d,%d)-(%d,%d)" % vb)
+            vlayer = lettering(wd, ht, (vx0 + vx1) / 2.0, (vy0 + vy1) / 2.0,
+                               (vx1 - vx0 + 1) + 12, (vy1 - vy0 + 1) + 8, style + "-narrow",
+                               text="VERSION " + version, blue_tail=None, aura_px=4)
+            old = vmask
+            for _ in range(2):          # the old text plus its outline and shadow
+                old = dilate(old)
+            covered, total = int((old & (vlayer[..., 3] > 0)).sum()), int(old.sum())
+            print("  version line covers %d/%d old subtitle pixels%s"
+                  % (covered, total, "" if covered == total else "  <-- WARNING: residue would show"))
+            paint(px, pal, vlayer)
+    return (wd, ht, lo, to, px), layer[..., 3]
 
 
 def make_mdoom(t, alpha):
-    """The lettering cropped out of the finished TITLEPIC, transparent elsewhere;
+    """The title lettering cropped out of the finished TITLEPIC, transparent elsewhere;
     offsets make M_DrawMainMenu's (94,2) land it at its own title position."""
     wd, ht, lo, to, px = t
     ys, xs = np.where(alpha > 0)
@@ -302,20 +352,34 @@ def preview(pal, name, patch, out_dir, scale=3, over=None):
     return px
 
 
+def default_version():
+    """versionName from the Android build - the one source of truth for what we ship."""
+    gradle = os.path.join(HERE, "..", "..", "android", "app", "build.gradle")
+    try:
+        m = re.search(r'versionName\s+"([^"]+)"', open(gradle, encoding="utf-8").read())
+        return m.group(1) if m else None
+    except OSError:
+        return None
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    style = "upright"
+    style, version = "upright", default_version()
     for a in sys.argv[1:]:
         if a.startswith("--style="):
             style = a.split("=", 1)[1]
-    if len(args) < 2 or style not in STYLES:
+        elif a.startswith("--version="):
+            version = a.split("=", 1)[1]
+    if version and version.lower() == "none":
+        version = None
+    if len(args) < 2 or style not in ("upright", "italic"):
         raise SystemExit(__doc__)
     iwad, out_wad = args[0], args[1]
     prev = args[2] if len(args) > 2 else None
     w = wadlib.WAD(iwad)
     pal = Palette(lump_by_name(w, "PLAYPAL"))
-    print("TITLEPIC (%s)" % style)
-    t, alpha = make_titlepic(pal, lump_by_name(w, "TITLEPIC"), style)
+    print("TITLEPIC (%s, version %s)" % (style, version or "line omitted"))
+    t, alpha = make_titlepic(pal, lump_by_name(w, "TITLEPIC"), style, version)
     print("M_DOOM")
     m = make_mdoom(t, alpha)
     print("  M_DOOM: %dx%d offsets (%d,%d)" % m[:4])
