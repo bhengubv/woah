@@ -65,6 +65,7 @@ public final class EditorActivity extends Activity implements LevelCanvasView.Li
         bar.addView(dressBtn); bar.addView(raiseBtn); bar.addView(lowerBtn); bar.addView(deleteBtn);
         presetBtn = button("Monsters: normal", NAVY, v -> { card.cyclePreset(); onChanged(); });
         bar.addView(presetBtn);
+        bar.addView(button("Share", NAVY, v -> share()));
         bar.addView(button("Fit", NAVY, v -> canvas.fit()));
         HorizontalScrollView barScroll = new HorizontalScrollView(this);
         barScroll.addView(bar);
@@ -85,7 +86,47 @@ public final class EditorActivity extends Activity implements LevelCanvasView.Li
 
         setContentView(root);
         canvas.setModel(card, tiles, this);
+        importIfShared(getIntent());
         onChanged();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        importIfShared(intent);
+        onChanged();
+    }
+
+    // ---- share / remix: the card is the thing that travels
+    /** A card arrived through the share sheet: keep it, open it, and make it the remixer's own. */
+    private void importIfShared(Intent intent) {
+        if (intent == null || !Intent.ACTION_SEND.equals(intent.getAction())) return;
+        String text = intent.getStringExtra(Intent.EXTRA_TEXT);
+        if (text == null || !text.contains("\"woah\"")) return;
+        try {
+            Card received = Card.fromJson(text);
+            String basedOn = received.name;
+            received.name = "Remix of " + basedOn;
+            card = received;
+            writeCard(new File(cardsDir(), basedOn.replaceAll("[^A-Za-z0-9 _-]", "").trim() + " (received).json"));
+            canvas.setCard(card);
+            onMessage("Card received: " + basedOn + " - it is yours to change");
+        } catch (Exception e) {
+            onMessage("That was not a Woah! card: " + e.getMessage());
+        }
+    }
+
+    private void share() {
+        try {
+            card.autoDoors(tiles);
+            Intent send = new Intent(Intent.ACTION_SEND);
+            send.setType("text/plain");
+            send.putExtra(Intent.EXTRA_SUBJECT, "Woah! level: " + card.name);
+            send.putExtra(Intent.EXTRA_TEXT, card.toJson());
+            startActivity(Intent.createChooser(send, "Send this level"));
+        } catch (Exception e) {
+            onMessage("Share failed: " + e.getMessage());
+        }
     }
 
     private Button button(String label, int color, View.OnClickListener l) {
