@@ -80,6 +80,17 @@ public class DoomActivity extends SDLActivity {
         // IWAD stay untouched.
         args.add("-file");
         args.add(new File(getFilesDir(), "woah.wad").getAbsolutePath());
+        // The About page shows the version this APK carries: versionName from
+        // build.gradle is the one source of truth, so the two cannot disagree.
+        try {
+            String v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            if (v != null && v.length() > 0) {
+                args.add("-appversion");
+                args.add(v);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         try {
             Uri data = getIntent() != null ? getIntent().getData() : null;
             if (data != null) {

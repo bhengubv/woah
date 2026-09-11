@@ -69,6 +69,7 @@
 #include "v_trans.h" // [crispy] colored "invert mouse" message
 
 #include "d_pwad.h" // [crispy] kex secret level
+#include "SDL.h" // [circle] SDL_OpenURL for the About page
 
 //
 // defaulted values
@@ -317,6 +318,7 @@ static const char *M_LumpText (const char *name)
         { "M_LOADG",  "Load Game" },
         { "M_SAVEG",  "Save Game" },
         { "M_RDTHIS", "Read This!" },
+        { "M_ABOUT",  "About Woah!" },
         { "M_QUITG",  "Quit Game" },
         { "M_EPI1",   "Knee-Deep in the Dead" },
         { "M_EPI2",   "The Shores of Hell" },
@@ -1963,6 +1965,73 @@ static void M_Multiplayer(int choice)
     M_SetupNextMenu(&MultiDef);
 }
 
+//
+// [circle] ABOUT WOAH!
+// The licence notice and source offer (GNU GPL v2, section 3), one tap from
+// the title screen. The version is whatever the Android build passes with
+// -appversion, so this page and the APK cannot disagree.
+//
+enum
+{
+    about_source,
+    about_end
+} about_e;
+
+static void M_OpenSource(int choice)
+{
+    choice = 0;
+    SDL_OpenURL("https://github.com/bhengubv/woah");
+}
+
+static menuitem_t AboutMenu[]=
+{
+    {1,"M_ABSRC",	M_OpenSource,'s', "Open the source page"},
+};
+
+static void M_DrawAbout(void)
+{
+    static char version[40] = "";
+    static boolean parsed = false;
+    static const char *lines[] = {
+        "Free software: GNU GPL version 2",
+        "Engine: Crispy Doom (GPLv2)",
+        "Game data: Freedoom (BSD)",
+        "No warranty. Licence and source:",
+        "github.com/bhengubv/woah",
+    };
+    int i, p;
+
+    if (!parsed)
+    {
+        parsed = true;
+        p = M_CheckParmWithArgs("-appversion", 1);
+        if (p)
+            M_snprintf(version, sizeof(version), "Version %s", myargv[p + 1]);
+    }
+
+    M_DrawTitle(38, "About Woah!");
+    if (version[0])
+        M_DrawTitle(56, version);
+    for (i = 0; i < (int)(sizeof(lines) / sizeof(lines[0])); i++)
+        M_DrawTitle(80 + 12 * i, lines[i]);
+}
+
+static menu_t AboutDef =
+{
+    about_end,
+    &MainDef,
+    AboutMenu,
+    M_DrawAbout,
+    88,150,
+    0
+};
+
+static void M_About(int choice)
+{
+    choice = 0;
+    M_SetupNextMenu(&AboutDef);
+}
+
 void M_ReadThis(int choice)
 {
     choice = 0;
@@ -3567,9 +3636,13 @@ void M_Init (void)
 
     if (gamemode == commercial)
     {
-        MainMenu[readthis] = MainMenu[quitdoom];
-        MainDef.numitems--;
-        MainDef.y += 8;
+        // [circle] Doom II has no "Read This!"; its slot is About Woah! -- the
+        // GPL source offer, one tap from the title screen. Six items, so the
+        // main menu keeps the six-item layout Doom 1 uses.
+        MainMenu[readthis].routine = M_About;
+        MainMenu[readthis].alphaKey = 'a';
+        MainMenu[readthis].alttext = "About Woah!";
+        M_StringCopy(MainMenu[readthis].name, "M_ABOUT", sizeof(MainMenu[readthis].name));
         NewDef.prevMenu = &MainDef;
         ReadDef1.routine = M_DrawReadThisCommercial;
         ReadDef1.x = 330;
