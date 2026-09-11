@@ -45,16 +45,18 @@ public class DoomActivity extends SDLActivity {
             e.printStackTrace();
         }
         try {
-            extractAsset("freedoom2.wad");
+            extractAsset("freedoom2.wad", false);
+            // Woah! title screen (TITLEPIC + M_DOOM) - tiny, so always refreshed on launch
+            extractAsset("woah.wad", true);
         } catch (Exception e) {
             e.printStackTrace();
         }
         super.onCreate(savedInstanceState);
     }
 
-    private void extractAsset(String name) throws Exception {
+    private void extractAsset(String name, boolean always) throws Exception {
         File out = new File(getFilesDir(), name);
-        if (out.exists() && out.length() > 1000000L) {
+        if (!always && out.exists() && out.length() > 1000000L) {
             return; // already extracted
         }
         InputStream in = getAssets().open(name);
@@ -74,6 +76,10 @@ public class DoomActivity extends SDLActivity {
     @Override
     protected String[] getArguments() {
         ArrayList<String> args = new ArrayList<String>();
+        // Woah! branding rides in a small PWAD so the engine and the Freedoom
+        // IWAD stay untouched.
+        args.add("-file");
+        args.add(new File(getFilesDir(), "woah.wad").getAbsolutePath());
         try {
             Uri data = getIntent() != null ? getIntent().getData() : null;
             if (data != null) {
