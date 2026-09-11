@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Build woah.wad - the Woah! title screen as a PWAD (TITLEPIC + M_DOOM).
 
-Keeps the Freedoom title art (BSD) and puts the Woah! nameplate over the
-FREEDOOM logo. M_DOOM (the logo drawn above the main menu) is that same
-nameplate, cropped and offset so M_DrawMainMenu's (94,2) lands it exactly where
-it sits on the title screen - opening the menu changes nothing at the top.
-The app loads the result with -file, so the engine is untouched.
+Keeps the Freedoom title art (BSD). The FREEDOOM logo is painted out with sky
+cloned from the same rows, and "Woah!" is set straight on that sky as chunky,
+pixel-crisp chrome lettering (silver, blue "!", dark outline, drop shadow, dark
+aura) so it sits IN the painting rather than on top of it. M_DOOM is that
+lettering cropped and offset so M_DrawMainMenu's (94,2) lands it exactly where
+it is on the title. The app loads the result with -file: engine untouched.
 
-usage: make_woah_wad.py <freedoom2.wad> <out.wad> [preview_dir]
+usage: make_woah_wad.py <freedoom2.wad> <out.wad> [preview_dir] [--style=upright|italic]
 """
 import os, struct, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -17,15 +18,14 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 BRAND_BLUE = (33, 150, 243)   # #2196F3 - the one blue
-PLATE = (10, 12, 18)
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
 
-FONTS = [  # first that exists wins; (path, variation axes by name)
-    ("/usr/share/fonts/truetype/ubuntu/Ubuntu-Italic[wdth,wght].ttf", {"wght": 800, "wdth": 100}),
-    ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", None),
-    ("/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf", None),
-]
+STYLES = {  # first font that exists wins; (path, variation axes by name - wide, so the
+    # lettering spans the old logo's footprint instead of leaving its edges peeking out)
+    "upright": [("/usr/share/fonts/truetype/ubuntu/Ubuntu[wdth,wght].ttf", {"wght": 800, "wdth": 125}),
+                ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", None)],
+    "italic": [("/usr/share/fonts/truetype/ubuntu/Ubuntu-Italic[wdth,wght].ttf", {"wght": 800, "wdth": 125}),
+               ("/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf", None)],
+}
 
 
 def lump_by_name(w, name):
@@ -109,87 +109,179 @@ class Palette:
         return img
 
 
-def load_font(size):
-    for path, axes in FONTS:
+def _axis_key(a):
+    """Pillow names variable-font axes by their human name (Weight/Width), not the tag."""
+    n = a["name"].decode() if isinstance(a["name"], bytes) else str(a["name"])
+    n = n.lower()
+    if n.startswith("wid") or n == "wdth":
+        return "wdth"
+    if n.startswith("wei") or n == "wght":
+        return "wght"
+    return n
+
+
+def load_font(size, style):
+    for path, axes in STYLES[style]:
         if not os.path.exists(path):
             continue
         f = ImageFont.truetype(path, size)
         if axes:
             try:
                 ax = f.get_variation_axes()
-                order = [a["name"].decode() if isinstance(a["name"], bytes) else a["name"] for a in ax]
-                f.set_variation_by_axes([axes.get(n, a["default"]) for n, a in zip(order, ax)])
+                f.set_variation_by_axes([min(max(axes.get(_axis_key(a), a["default"]), a["minimum"]), a["maximum"])
+                                         for a in ax])
             except Exception as e:  # static fallback still renders
                 print("  variation axes unavailable:", e)
         return f
-    raise SystemExit("no usable TTF found")
+    raise SystemExit("no usable TTF for style " + style)
 
 
-def fit_font(text, box_w, box_h, stroke=0):
-    d = ImageDraw.Draw(Image.new("RGB", (1, 1)))
+def fit_font(text, box_w, box_h, style):
+    d = ImageDraw.Draw(Image.new("L", (1, 1)))
     for size in range(120, 8, -1):
-        f = load_font(size)
-        l, t, r, b = d.textbbox((0, 0), text, font=f, stroke_width=stroke)
+        f = load_font(size, style)
+        l, t, r, b = d.textbbox((0, 0), text, font=f)
         if r - l <= box_w and b - t <= box_h:
             return f
-    return load_font(8)
+    return load_font(8, style)
 
 
-def draw_wordmark(layer, cx, cy, box_w, box_h, stroke=0):
-    """'Woah' in white + '!' in brand blue, centred on (cx, cy)."""
-    f = fit_font("Woah!", box_w, box_h, stroke)
-    d = ImageDraw.Draw(layer)
-    l, t, r, b = d.textbbox((0, 0), "Woah!", font=f, stroke_width=stroke)
-    w_word = d.textlength("Woah", font=f)
-    x0 = cx - (r - l) / 2 - l
-    y0 = cy - (b - t) / 2 - t
-    d.text((x0, y0), "Woah", font=f, fill=WHITE, stroke_width=stroke, stroke_fill=BLACK)
-    d.text((x0 + w_word, y0), "!", font=f, fill=BRAND_BLUE, stroke_width=stroke, stroke_fill=BLACK)
+def dilate(m):
+    p = np.pad(m, 1)
+    out = np.zeros_like(m)
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            out |= p[1 + dy:1 + dy + m.shape[0], 1 + dx:1 + dx + m.shape[1]]
+    return out
 
 
-def logo_bbox(img, y0=4, y1=62, x_mid=160, x1=280, lum_min=140, chroma_max=48):
-    """Bounding box of the silver FREEDOOM letters in the top band. Detection
-    runs on the RIGHT half only - the creature on the left has bright, low-chroma
-    highlights that fool any colour test - and since Freedoom centres the logo,
-    the left edge is the right edge mirrored."""
-    a = np.asarray(img).astype(np.int32)[y0:y1, x_mid:x1]
-    lum = (a[:, :, 0] * 299 + a[:, :, 1] * 587 + a[:, :, 2] * 114) // 1000
+def chrome(f, blue):
+    """Vertical chrome ramp: bright top, dark band just below the middle, lighter bottom."""
+    def lerp(a, b, k):
+        return tuple(int(round(a[i] + (b[i] - a[i]) * k)) for i in range(3))
+    if blue:
+        top, hi, band, lo, bot = (175, 218, 255), BRAND_BLUE, (10, 70, 140), BRAND_BLUE, (8, 78, 168)
+    else:
+        top, hi, band, lo, bot = (252, 252, 255), (186, 191, 201), (92, 97, 108), (176, 181, 191), (116, 121, 132)
+    if f < 0.45:
+        return lerp(top, hi, f / 0.45)
+    if f < 0.55:
+        return band
+    return lerp(lo, bot, (f - 0.55) / 0.45)
+
+
+def lettering(wd, ht, cx, cy, box_w, box_h, style):
+    """Pixel-crisp chrome 'Woah!' (blue '!') with a 1px dark outline, a 2px drop
+    shadow and a 3px dark aura, as an RGBA array. No antialiasing on purpose:
+    at 320x200 it has to look painted, not rendered."""
+    f = fit_font("Woah!", box_w, box_h, style)
+    print("  font:", getattr(f, "path", "?"), "size", f.size)
+    try:  # prove the variation actually applied
+        print("  axes:", [(_axis_key(a), a["minimum"], a["default"], a["maximum"]) for a in f.get_variation_axes()],
+              "set:", STYLES[style][0][1])
+    except Exception:
+        pass
+    probe = ImageDraw.Draw(Image.new("L", (1, 1)))
+    probe.fontmode = "1"
+    l, t, r, b = probe.textbbox((0, 0), "Woah!", font=f)
+    x0 = int(round(cx - (r - l) / 2 - l))
+    y0 = int(round(cy - (b - t) / 2 - t))
+
+    def mask(txt, x):
+        img = Image.new("L", (wd, ht), 0)
+        d = ImageDraw.Draw(img)
+        d.fontmode = "1"
+        d.text((x, y0), txt, font=f, fill=255)
+        return np.asarray(img) > 0
+
+    m_word = mask("Woah", x0)
+    m_bang = mask("!", x0 + int(round(probe.textlength("Woah", font=f))))
+    m = m_word | m_bang
+    edge = dilate(m) & ~m
+    body = m | edge
+    shadow = np.zeros_like(m)
+    shadow[2:, 2:] = body[:-2, :-2]
+    shadow &= ~body
+    aura = body | shadow
+    for _ in range(3):
+        aura = dilate(aura)
+    aura &= ~(body | shadow)
+    layer = np.zeros((ht, wd, 4), np.uint8)
+    layer[aura] = (34, 2, 2, 255)
+    layer[shadow] = (16, 0, 0, 255)
+    layer[edge] = (20, 8, 8, 255)
+    ty, by = y0 + t, y0 + b
+    for y, x in zip(*np.where(m)):
+        fr = min(1.0, max(0.0, (y - ty) / max(1, by - ty)))
+        layer[y, x] = chrome(fr, bool(m_bang[y, x])) + (255,)
+    return layer
+
+
+def logo_mask(img, y0=4, y1=62, x0=40, x1=280):
+    """The FREEDOOM logo's own pixels - silver letters (bright, near-neutral) plus
+    the orange infinity - grown 3px to swallow bevel and shadow. The horizontal
+    span is taken from the RIGHT half and mirrored (the creature on the left has
+    bright beige highlights that fool colour tests); Freedoom centres the logo."""
+    a = np.asarray(img).astype(np.int32)
+    lum = (a[..., 0] * 299 + a[..., 1] * 587 + a[..., 2] * 114) // 1000
     chroma = a.max(axis=2) - a.min(axis=2)
-    ys, xs = np.where((lum >= lum_min) & (chroma <= chroma_max))
+    silver = (lum >= 150) & (chroma <= 25)
+    orange = (a[..., 0] >= 180) & (a[..., 1] >= 80) & (a[..., 1] <= 200) & (a[..., 2] <= 90)
+    band = np.zeros_like(silver)
+    band[y0:y1, x0:x1] = True
+    right = silver & band
+    right[:, :img.width // 2] = False
+    ys, xs = np.where(right)
     if len(xs) == 0:
         raise SystemExit("logo not found - thresholds need a look")
-    right = int(xs.max()) + x_mid
-    return img.width - 1 - right, int(ys.min()) + y0, right, int(ys.max()) + y0
+    rx = int(xs.max())
+    lx = img.width - 1 - rx
+    ty, by = int(ys.min()), int(ys.max())
+    span = np.zeros_like(silver)
+    span[max(0, ty - 6):by + 7, max(0, lx - 6):rx + 7] = True
+    # creature zone (left): anything NEUTRAL is logo - chrome highlights, dark bevel and
+    # shadow alike - because the creature is tan/blue and the sky is red; grown 4px
+    loose = (lum >= 20) & (chroma <= 30)
+    m = (loose | orange) & span
+    for _ in range(4):
+        m = dilate(m)
+    m &= span
+    # right of the creature the logo sits on plain sky: take the whole strip - no residue
+    m[max(0, ty - 6):by + 7, 118:rx + 7] = True
+    return m, (lx, ty, rx, by)
 
 
-def make_titlepic(pal, data, pad=5):
-    """Returns ((patch tuple), plate rect, plate alpha mask)."""
+def paint_out(px, m, src_x0=238, src_x1=288):
+    """Replace masked pixels with sky cloned from the same row further right, where
+    the title art is plain sky; ping-pong tiled so no seam repeats."""
+    n = src_x1 - src_x0 + 1
+    for y, x in zip(*np.where(m)):
+        k = int(x) % (2 * n)
+        sx = src_x0 + (k if k < n else 2 * n - 1 - k)
+        px[y][x] = px[y][sx]
+
+
+def make_titlepic(pal, data, style):
+    """Returns (patch tuple, lettering alpha mask)."""
     wd, ht, lo, to, px = decode_patch(data)
     base = pal.to_image(px, wd, ht)
-    x0, y0, x1, y1 = logo_bbox(base)
-    print("  logo bbox: (%d,%d)-(%d,%d)" % (x0, y0, x1, y1))
-    half = max(wd // 2 - x0, x1 - wd // 2) + pad          # symmetric about the centre line
-    # two extra rows at the bottom hide the orange infinity's tail; menu items start at y=64
-    plate = (wd // 2 - half, max(0, y0 - pad), wd // 2 + half, min(60, y1 + pad + 2))
-    print("  plate: (%d,%d)-(%d,%d)" % plate)
-    layer = Image.new("RGBA", (wd, ht), (0, 0, 0, 0))
-    d = ImageDraw.Draw(layer)
-    d.rounded_rectangle(plate, radius=5, fill=PLATE + (255,), outline=BRAND_BLUE + (255,), width=2)
-    pw, ph = plate[2] - plate[0], plate[3] - plate[1]
-    draw_wordmark(layer, (plate[0] + plate[2]) / 2, (plate[1] + plate[3]) / 2, pw - 14, ph - 8)
-    out = Image.alpha_composite(base.convert("RGBA"), layer).convert("RGB")
-    alpha = np.asarray(layer)[:, :, 3]
-    rgb = np.asarray(out)
-    for y, x in zip(*np.where(alpha > 0)):   # only painted pixels get re-quantised; the art keeps its indices
-        px[y][x] = pal.nearest(rgb[y, x])
-    return (wd, ht, lo, to, px), plate, alpha
+    m, (lx, ty, rx, by) = logo_mask(base)
+    print("  logo bbox: (%d,%d)-(%d,%d); painting out %d px" % (lx, ty, rx, by, int(m.sum())))
+    paint_out(px, m)
+    cx, cy = (lx + rx) / 2.0, (ty + by) / 2.0
+    layer = lettering(wd, ht, cx, cy, (rx - lx + 1) + 24, 40, style)
+    alpha = layer[..., 3]
+    for y, x in zip(*np.where(alpha > 0)):   # only painted pixels get re-quantised
+        px[y][x] = pal.nearest(tuple(int(c) for c in layer[y, x, :3]))
+    return (wd, ht, lo, to, px), alpha
 
 
-def make_mdoom(t, plate, alpha):
-    """The nameplate cropped out of the finished TITLEPIC; rounded-corner gaps
-    stay transparent. Offsets make (94,2) land it at the plate's own position."""
+def make_mdoom(t, alpha):
+    """The lettering cropped out of the finished TITLEPIC, transparent elsewhere;
+    offsets make M_DrawMainMenu's (94,2) land it at its own title position."""
     wd, ht, lo, to, px = t
-    x0, y0, x1, y1 = plate
+    ys, xs = np.where(alpha > 0)
+    x0, x1, y0, y1 = int(xs.min()), int(xs.max()), int(ys.min()), int(ys.max())
     crop = [[px[y][x] if alpha[y][x] > 0 else None for x in range(x0, x1 + 1)] for y in range(y0, y1 + 1)]
     return x1 - x0 + 1, y1 - y0 + 1, 94 - x0, 2 - y0, crop
 
@@ -211,16 +303,21 @@ def preview(pal, name, patch, out_dir, scale=3, over=None):
 
 
 def main():
-    if len(sys.argv) < 3:
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    style = "upright"
+    for a in sys.argv[1:]:
+        if a.startswith("--style="):
+            style = a.split("=", 1)[1]
+    if len(args) < 2 or style not in STYLES:
         raise SystemExit(__doc__)
-    iwad, out_wad = sys.argv[1], sys.argv[2]
-    prev = sys.argv[3] if len(sys.argv) > 3 else None
+    iwad, out_wad = args[0], args[1]
+    prev = args[2] if len(args) > 2 else None
     w = wadlib.WAD(iwad)
     pal = Palette(lump_by_name(w, "PLAYPAL"))
-    print("TITLEPIC")
-    t, plate, alpha = make_titlepic(pal, lump_by_name(w, "TITLEPIC"))
+    print("TITLEPIC (%s)" % style)
+    t, alpha = make_titlepic(pal, lump_by_name(w, "TITLEPIC"), style)
     print("M_DOOM")
-    m = make_mdoom(t, plate, alpha)
+    m = make_mdoom(t, alpha)
     print("  M_DOOM: %dx%d offsets (%d,%d)" % m[:4])
     t_bytes, m_bytes = encode_patch(*t), encode_patch(*m)
     assert decode_patch(t_bytes)[4] == t[4] and decode_patch(m_bytes)[4] == m[4], "patch round-trip mismatch"
@@ -228,8 +325,8 @@ def main():
     print("wrote", out_wad, os.path.getsize(out_wad), "bytes")
     if prev:
         os.makedirs(prev, exist_ok=True)
-        tp = preview(pal, "titlepic", t_bytes, prev)
-        # menu preview over the ORIGINAL art, so a mismatch between plate and M_DOOM would show
+        preview(pal, "titlepic", t_bytes, prev)
+        # menu preview over the ORIGINAL art: a mismatch between title and M_DOOM would show
         orig = pal.to_image(decode_patch(lump_by_name(w, "TITLEPIC"))[4], t[0], t[1])
         preview(pal, "mainmenu", m_bytes, prev, over=orig)
         print("previews in", prev)
