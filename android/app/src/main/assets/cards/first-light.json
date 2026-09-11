@@ -1,0 +1,18 @@
+{
+  "woah": 1,
+  "name": "First light",
+  "author": "Woah!",
+  "based_on": null,
+  "grid": 64,
+  "tiles": [
+    {"t": "start",       "x": 0,  "y": 0,  "dress": "tech"},
+    {"t": "hall_ew",     "x": 4,  "y": 1,  "dress": "tech"},
+    {"t": "pillar_room", "x": 8,  "y": -1, "dress": "base"},
+    {"t": "steps_ew",    "x": 14, "y": 1,  "dress": "base"},
+    {"t": "room_m",      "x": 18, "y": -1, "z": 64, "dress": "hell"},
+    {"t": "hall_ew",     "x": 24, "y": 1,  "z": 64, "dress": "hell"},
+    {"t": "exit",        "x": 28, "y": 0,  "z": 64, "dress": "tech"}
+  ],
+  "doors": [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6]],
+  "pop": {"preset": "normal"}
+}

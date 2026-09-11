@@ -118,6 +118,16 @@ public class DoomActivity extends SDLActivity {
                     args.add("-warp");
                     args.add("1");
                 }
+                // A level CARD: compiled right here by the Java compiler into
+                // files/level.wad, then played the same way as a ready PWAD.
+                String card = data.getQueryParameter("card");
+                if (card != null && card.length() > 0 && new File(card).canRead()) {
+                    File wad = net.thegeek.woah.editor.LevelBuilder.build(this,
+                            net.thegeek.woah.editor.LevelBuilder.readText(new File(card)));
+                    args.add(2, wad.getAbsolutePath());
+                    args.add("-warp");
+                    args.add("1");
+                }
             }
         } catch (Exception e) {
             e.printStackTrace(); // never let a malformed intent stop the game
