@@ -26,6 +26,12 @@ public final class Card {
     public int grid = 64;
     public final List<Placed> tiles = new ArrayList<>();
     public final List<int[]> doors = new ArrayList<>();
+    public String preset = "normal";                                  // pop.preset
+    public final java.util.Map<String, String> slots = new java.util.LinkedHashMap<>();   // pop.slots
+
+    public void cyclePreset() {
+        preset = preset.equals("easy") ? "normal" : preset.equals("normal") ? "hard" : "easy";
+    }
 
     public static Card fromJson(String json) throws JSONException {
         JSONObject o = new JSONObject(json);
@@ -45,6 +51,17 @@ public final class Card {
         if (ds != null) {
             for (int i = 0; i < ds.length(); i++) {
                 c.doors.add(new int[]{ds.getJSONArray(i).getInt(0), ds.getJSONArray(i).getInt(1)});
+            }
+        }
+        JSONObject pop = o.optJSONObject("pop");
+        if (pop != null) {
+            c.preset = pop.optString("preset", "normal");
+            JSONObject sl = pop.optJSONObject("slots");
+            if (sl != null) {
+                for (java.util.Iterator<String> it = sl.keys(); it.hasNext(); ) {
+                    String k = it.next();
+                    c.slots.put(k, sl.getString(k));
+                }
             }
         }
         return c;
@@ -71,7 +88,13 @@ public final class Card {
         JSONArray ds = new JSONArray();
         for (int[] d : doors) ds.put(new JSONArray().put(d[0]).put(d[1]));
         o.put("doors", ds);
-        o.put("pop", new JSONObject().put("preset", "normal"));
+        JSONObject pop = new JSONObject().put("preset", preset);
+        if (!slots.isEmpty()) {
+            JSONObject sl = new JSONObject();
+            for (java.util.Map.Entry<String, String> e : slots.entrySet()) sl.put(e.getKey(), e.getValue());
+            pop.put("slots", sl);
+        }
+        o.put("pop", pop);
         return o.toString(1);
     }
 

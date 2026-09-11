@@ -34,7 +34,7 @@ public final class EditorActivity extends Activity implements LevelCanvasView.Li
     private Tiles tiles;
     private Card card;
     private LevelCanvasView canvas;
-    private Button dressBtn, deleteBtn, raiseBtn, lowerBtn;
+    private Button dressBtn, deleteBtn, raiseBtn, lowerBtn, presetBtn;
 
     @Override
     protected void onCreate(Bundle saved) {
@@ -63,6 +63,8 @@ public final class EditorActivity extends Activity implements LevelCanvasView.Li
         lowerBtn = button("Lower", NAVY, v -> canvas.raiseSelected(-16));
         deleteBtn = button("Delete", Color.rgb(120, 32, 32), v -> canvas.deleteSelected());
         bar.addView(dressBtn); bar.addView(raiseBtn); bar.addView(lowerBtn); bar.addView(deleteBtn);
+        presetBtn = button("Monsters: normal", NAVY, v -> { card.cyclePreset(); onChanged(); });
+        bar.addView(presetBtn);
         bar.addView(button("Fit", NAVY, v -> canvas.fit()));
         HorizontalScrollView barScroll = new HorizontalScrollView(this);
         barScroll.addView(bar);
@@ -104,6 +106,7 @@ public final class EditorActivity extends Activity implements LevelCanvasView.Li
     public void onChanged() {
         boolean sel = canvas.selectedTile() != null;
         dressBtn.setEnabled(sel); deleteBtn.setEnabled(sel); raiseBtn.setEnabled(sel); lowerBtn.setEnabled(sel);
+        presetBtn.setText("Monsters: " + card.preset);
     }
 
     @Override
