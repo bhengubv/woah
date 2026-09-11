@@ -43,9 +43,29 @@ android {
             // }
         }
     }
+    // Release signing with nothing secret in the tree: point WOAH_KEYSTORE at the
+    // keystore file and pass WOAH_KEYSTORE_PASS / WOAH_KEY_ALIAS (/ WOAH_KEY_PASS)
+    // in the environment. Without them assembleRelease still builds and yields
+    // app-release-unsigned.apk, to be signed elsewhere with apksigner.
+    def releaseKeystore = System.getenv('WOAH_KEYSTORE')
+    def canSignRelease = releaseKeystore != null && file(releaseKeystore).exists() \
+            && System.getenv('WOAH_KEYSTORE_PASS') != null && System.getenv('WOAH_KEY_ALIAS') != null
+    signingConfigs {
+        release {
+            if (canSignRelease) {
+                storeFile file(releaseKeystore)
+                storePassword System.getenv('WOAH_KEYSTORE_PASS')
+                keyAlias System.getenv('WOAH_KEY_ALIAS')
+                keyPassword System.getenv('WOAH_KEY_PASS') ?: System.getenv('WOAH_KEYSTORE_PASS')
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
+            if (canSignRelease) {
+                signingConfig signingConfigs.release
+            }
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
