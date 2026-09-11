@@ -11,9 +11,12 @@ teaches by **remixing something somebody handed you**, not by a create-new wizar
   Not Freedoom sectors glued together — their geometry is freeform and does not compose.
   Freedoom (BSD) supplies the **dressing**: texture pairings, light levels, room heights and
   monster mixes, harvested by `tools/prefab/extract.py` into `palettes.json`.
-- **Valid by construction.** Tiles never overlap and each carries its own precomputed BSP
-  piece, so a level's nodes are built by composition — no node builder on the phone, and
-  every level the editor lets you play is a level the engine can load.
+- **Valid by construction.** Tiles never overlap and every tile is built from axis-aligned
+  rectangles, so the compiler builds the BSP itself with axis-aligned splits (a rectangle cut
+  by a straight line is two rectangles; leaves are the subsectors). No node-builder library,
+  nothing precomputed per tile — and every level the editor lets you play is a level the
+  engine can load. (M1 finding, 2026-09-11: this replaced the earlier "precomputed BSP piece
+  per tile" idea; it is simpler and covers tiles of any shape made of rectangles.)
 - **Geometry tiles + a separate population layer.** Tiles carry typed spawn slots; a
   population preset fills them. Same layout, different difficulty; the marines dial is
   untouched because bots are players, not monsters.
@@ -69,9 +72,10 @@ Initial set (~24): `start`, `exit`, `room_s`, `room_m`, `room_l`, `hall_ns`, `ha
 1. Place tiles; reject overlaps; every door must pair two touching, matching sockets.
 2. Emit `VERTEXES / LINEDEFS / SIDEDEFS / SECTORS / THINGS` by offsetting each tile's local
    data; a door socket becomes the two-sided line (or door sector) between the two tiles.
-3. Nodes by composition: offset and re-index each tile's local `SSECTORS/SEGS/NODES`; join
-   them with a top-level tree of axis-aligned splits between tile boxes (tiles never overlap,
-   so any split between two boxes is a valid partition).
+3. Nodes by axis-aligned splits over all sector rectangles (kd-tree; a straddling rectangle is
+   cut into two). Each leaf rectangle is a subsector whose segs are the pieces of linedefs
+   along its edges. `tools/tiles/compile.py` is the reference; `lint.py` re-reads the output
+   and checks every index, the tree walk and the blockmap before a WAD reaches a phone.
 4. `BLOCKMAP`: rasterise linedefs into 128-unit blocks. `REJECT`: all zero (valid, no culling).
 5. Write a PWAD with `MAP01`; play with `-file <card>.wad -warp 1`.
 

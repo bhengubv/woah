@@ -109,6 +109,15 @@ public class DoomActivity extends SDLActivity {
                     args.add("-shader");
                     args.add(shader);
                 }
+                // A compiled level from the editor: it joins the -file list right
+                // after woah.wad (DOOM reads only the first -file group) and the game
+                // starts in its MAP01 instead of the title loop.
+                String map = data.getQueryParameter("map");
+                if (map != null && map.length() > 0 && new File(map).canRead()) {
+                    args.add(2, map);
+                    args.add("-warp");
+                    args.add("1");
+                }
             }
         } catch (Exception e) {
             e.printStackTrace(); // never let a malformed intent stop the game
